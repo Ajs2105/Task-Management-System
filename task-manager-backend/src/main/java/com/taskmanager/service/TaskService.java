@@ -1,3 +1,4 @@
+    
 package com.taskmanager.service;
 
 import com.taskmanager.dto.TaskDto;
@@ -39,7 +40,13 @@ public class TaskService {
         return saved;
     }
 
+
     public List<Task> listAll() { return taskRepository.findAll(); }
+
+    public List<Task> listByUserId(Long userId) {
+        // You can use findByAssigneeId or findByCreatorId depending on your logic
+        return taskRepository.findByAssigneeId(userId);
+    }
 
     public Optional<Task> findById(Long id) { return taskRepository.findById(id); }
 

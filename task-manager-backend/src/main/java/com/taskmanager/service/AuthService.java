@@ -1,5 +1,6 @@
 package com.taskmanager.service;
 
+import com.taskmanager.dto.ForgotPasswordRequest;
 import com.taskmanager.dto.JwtResponse;
 import com.taskmanager.dto.LoginRequest;
 import com.taskmanager.dto.SignupRequest;
@@ -38,7 +39,13 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
         String jwt = jwtUtils.generateJwtToken(loginRequest.getEmail());
         User user = userRepository.findByEmail(loginRequest.getEmail()).get();
-        return new JwtResponse(jwt, user.getId(), user.getEmail(), user.getFullName());
+        Set<String> roles = new java.util.HashSet<>();
+        if (user.getRoles() != null) {
+            for (Role r : user.getRoles()) {
+                roles.add(r.getName());
+            }
+        }
+        return new JwtResponse(jwt, user.getId(), user.getEmail(), user.getFullName(), roles);
     }
 
     public String registerUser(SignupRequest signupRequest) {
@@ -59,5 +66,16 @@ public class AuthService {
         u.setRoles(roles);
         userRepository.save(u);
         return "User registered successfully!";
+    }
+
+    // ✅ Forgot password functionality
+    public String resetPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
+
+        user.setPassword(encoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        return "Password reset successful!";
     }
 }
