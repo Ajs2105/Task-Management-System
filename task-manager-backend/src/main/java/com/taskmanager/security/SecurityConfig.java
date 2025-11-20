@@ -53,8 +53,13 @@ public class SecurityConfig {
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
+        // ✅ Allow all dev/test frontend URLs
         config.addAllowedOrigin("http://localhost:3000");
         config.addAllowedOrigin("http://localhost:5173");
+        config.addAllowedOrigin("http://localhost:5174");  // ✅ Added for Vite port when 5173 is busy
+        config.addAllowedOrigin("http://127.0.0.1:3000");
+        config.addAllowedOrigin("http://127.0.0.1:5173");
+        config.addAllowedOrigin("http://127.0.0.1:5174");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         config.setAllowCredentials(true);

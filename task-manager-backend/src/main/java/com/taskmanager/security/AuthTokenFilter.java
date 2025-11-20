@@ -11,10 +11,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 public class AuthTokenFilter extends OncePerRequestFilter {
+    private static final Logger logger = LoggerFactory.getLogger(AuthTokenFilter.class);
 
     private JwtUtils jwtUtils;
     private UserDetailsServiceImpl userDetailsService;
@@ -30,18 +33,25 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+
         try {
             String jwt = parseJwt(request);
-            if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
-                String username = jwtUtils.getUserNameFromJwtToken(jwt);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(auth);
+            logger.info("[AuthTokenFilter] JWT from header: {}", jwt);
+            if (jwt != null) {
+                boolean valid = jwtUtils.validateJwtToken(jwt);
+                logger.info("[AuthTokenFilter] JWT valid: {}", valid);
+                if (valid) {
+                    String username = jwtUtils.getUserNameFromJwtToken(jwt);
+                    logger.info("[AuthTokenFilter] Username from JWT: {}", username);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    UsernamePasswordAuthenticationToken auth =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
             }
         } catch (Exception e) {
-            // log if needed
+            logger.error("[AuthTokenFilter] Exception during JWT processing", e);
         }
 
         filterChain.doFilter(request, response);

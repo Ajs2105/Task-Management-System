@@ -39,17 +39,19 @@ function Login({ onLogin }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-  const res = await api.post('/api/auth/login', { email, password });
+  const res = await api.post('/auth/login', { email, password });
       localStorage.setItem('jwt', res.data.token);
-      onLogin({
+      const userData = {
         token: res.data.token,
         id: res.data.id,
         email: res.data.email,
         fullName: res.data.fullName,
         roles: res.data.roles
-      });
+      };
+      localStorage.setItem('user', JSON.stringify(userData));
+      onLogin(userData);
       navigate('/tasks');
-    } catch {
+    } catch (err) {
       setError('Invalid email or password');
     }
   };
@@ -62,7 +64,7 @@ function Login({ onLogin }) {
       return;
     }
     try {
-  await api.post('/api/auth/register', {
+  await api.post('/auth/register', {
         fullName: registerData.fullName,
         email: registerData.email,
         password: registerData.password,

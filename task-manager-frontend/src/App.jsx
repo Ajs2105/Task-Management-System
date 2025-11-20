@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Tasks from './pages/Tasks';
 import UserManagement from './pages/UserManagement';
+import AllUsersTasks from './pages/AllUsersTasks';
+import api from './api/axiosConfig';
 function Header({ user, onLogout }) {
   const isSuperAdmin = user && user.roles && (user.roles.includes('ROLE_SUPER_ADMIN') || user.roles.includes('SUPER_ADMIN'));
+  const isAdmin = user && user.roles && (user.roles.includes('ROLE_ADMIN') || user.roles.includes('ROLE_SUPER_ADMIN'));
   return (
     <header style={{
       width: '100%',
@@ -33,6 +36,9 @@ function Header({ user, onLogout }) {
           <Link to="/tasks" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, fontSize: 18 }}>Tasks</Link>
           {isSuperAdmin && (
             <Link to="/users" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, fontSize: 18 }}>User Management</Link>
+          )}
+          {isAdmin && (
+            <Link to="/all-users-tasks" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, fontSize: 18 }}>All Users Tasks</Link>
           )}
           <span style={{ fontWeight: 500, fontSize: 16, marginLeft: 10 }}>
             Welcome, {user.fullName || user.email}!
@@ -67,11 +73,42 @@ function Footer() {
 
 function App() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Load user from localStorage on app mount
+  useEffect(() => {
+    const loadUserFromStorage = async () => {
+      const jwt = localStorage.getItem('jwt');
+      const storedUser = localStorage.getItem('user');
+      
+      if (jwt && storedUser) {
+        try {
+          // Verify JWT is still valid by calling /api/auth/me
+          const res = await api.get('/auth/me');
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+        } catch (err) {
+          // JWT is invalid/expired
+          console.log('JWT validation failed, clearing storage');
+          localStorage.removeItem('jwt');
+          localStorage.removeItem('user');
+        }
+      }
+      setLoading(false);
+    };
+    
+    loadUserFromStorage();
+  }, []);
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('jwt');
+    localStorage.removeItem('user');
   };
+
+  if (loading) {
+    return <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px' }}>Loading...</div>;
+  }
 
   return (
     <Router>
@@ -94,6 +131,7 @@ function App() {
                 : <Navigate to="/login" />
             }
           />
+          <Route path="/all-users-tasks" element={user && (user.roles && (user.roles.includes('ROLE_ADMIN') || user.roles.includes('ROLE_SUPER_ADMIN'))) ? <AllUsersTasks user={user} /> : <Navigate to="/login" />} />
           <Route path="/" element={<Navigate to="/login" />} />
         </Routes>
       </div>
